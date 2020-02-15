@@ -1,0 +1,61 @@
+DVBTUNE
+=======-
+
+Some older versions of dvbtune, had limited adapters:
+
+Increase number of adapters in dvbtune Debian pkg:
+Default is (0-3)
+
+apt-get source dvbtune
+apt-get build-dep dvbtune
+dpkg-buildpackage -rfakeroot -uc -b
+
+Patch
+=====
+
+diff -ru dvbtune-0.5.ds/dvbtune.c dvbtune-0.5.ds-orig/dvbtune.c
+--- dvbtune-0.5.ds/dvbtune.c    2017-05-04 12:19:54.000000000 +0100
++++ dvbtune-0.5.ds-orig/dvbtune.c       2017-05-04 11:00:04.304218639 +0100
+@@ -97,14 +97,14 @@
+ int tone = -1;
+ 
+ #ifdef NEWSTRUCT
+-char* frontenddev[4]={"/dev/dvb/adapter0/frontend0","/dev/dvb/adapter1/frontend0","/dev/dvb/adapter2/frontend0","/dev/dvb/adapter3/frontend0"};
+-char* dvrdev[4]={"/dev/dvb/adapter0/dvr0","/dev/dvb/adapter1/dvr0","/dev/dvb/adapter2/dvr0","/dev/dvb/adapter3/dvr0"};
+-char* demuxdev[4]={"/dev/dvb/adapter0/demux0","/dev/dvb/adapter1/demux0","/dev/dvb/adapter2/demux0","/dev/dvb/adapter3/demux0"};
++char* frontenddev[5]={"/dev/dvb/adapter0/frontend0","/dev/dvb/adapter1/frontend0","/dev/dvb/adapter2/frontend0","/dev/dvb/adapter3/frontend0","/dev/dvb/adapter4/frontend0"};
++char* dvrdev[5]={"/dev/dvb/adapter0/dvr0","/dev/dvb/adapter1/dvr0","/dev/dvb/adapter2/dvr0","/dev/dvb/adapter3/dvr0","/dev/dvb/adapter4/dvr0"};
++char* demuxdev[5]={"/dev/dvb/adapter0/demux0","/dev/dvb/adapter1/demux0","/dev/dvb/adapter2/demux0","/dev/dvb/adapter3/demux0","/dev/dvb/adapter4/demux0"};
+ #else
+-char* frontenddev[4]={"/dev/ost/frontend0","/dev/ost/frontend1","/dev/ost/frontend2","/dev/ost/frontend3"};
+-char* dvrdev[4]={"/dev/ost/dvr0","/dev/ost/dvr1","/dev/ost/dvr2","/dev/ost/dvr3"};
+-char* secdev[4]={"/dev/ost/sec0","/dev/ost/sec1","/dev/ost/sec2","/dev/ost/sec3"};
+-char* demuxdev[4]={"/dev/ost/demux0","/dev/ost/demux1","/dev/ost/demux2","/dev/ost/demux3"};
++char* frontenddev[5]={"/dev/ost/frontend0","/dev/ost/frontend1","/dev/ost/frontend2","/dev/ost/frontend3","/dev/ost/frontend4"};
++char* dvrdev[5]={"/dev/ost/dvr0","/dev/ost/dvr1","/dev/ost/dvr2","/dev/ost/dvr3","/dev/ost/dvr4"};
++char* secdev[5]={"/dev/ost/sec0","/dev/ost/sec1","/dev/ost/sec2","/dev/ost/sec3","/dev/ost/sec4"};
++char* demuxdev[5]={"/dev/ost/demux0","/dev/ost/demux1","/dev/ost/demux2","/dev/ost/demux3","/dev/ost/demux4"};
+ #endif
+ 
+ typedef struct _transponder_t {
+@@ -1096,7 +1096,7 @@
+        fprintf(fp,_("-i          Dump SI information as XML\n"));
+ 
+        fprintf(fp,_("\nAdvanced tuning options:\n\n"));
+-       fprintf(fp,_("-c [0-3]    Use DVB card #[0-3]\n"));
++       fprintf(fp,_("-c [0-4]    Use DVB card #[0-4]\n"));
+        fprintf(fp,_("-tone [0|1] 0=22kHz off, 1=22kHz on\n"));
+        fprintf(fp,_("-I [0|1|2]  0=Spectrum Inversion off, 1=Spectrum Inversion on, 2=auto\n"));
+        fprintf(fp,_("-D [0-4]    DiSEqC command (0=none)\n\n"));
+@@ -1184,8 +1184,8 @@
+       } else if (strcmp(argv[i],"-c")==0) { // 
+         i++;
+         card=atoi(argv[i]);
+-        if ((card < 0) || (card > 3)) {
+-         fprintf(stderr,_("card must be between 0 and 3\n"));
++        if ((card < 0) || (card > 4)) {
++         fprintf(stderr,_("card must be between 0 and 4\n"));
+           exit(-1);
+         }
+       } else if (strcmp(argv[i],"-x")==0) { // 
+
