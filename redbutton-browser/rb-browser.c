@@ -41,11 +41,6 @@ main(int argc, char *argv[])
 	size_t last;
 	int rc;
 
-	/* we assume &struct == &struct.first_item, not sure if C guarantees it */
-	ApplicationClass app;
-	if(&app != (ApplicationClass *) &app.rootClass)
-		fatal("%s needs to be compiled with a compiler that makes &struct == &struct.first_item", prog_name);
-	/* let's be really paranoid */
 	if(NULL != 0)
 		fatal("%s needs to be compiled with a libc that makes NULL == 0", prog_name);
 

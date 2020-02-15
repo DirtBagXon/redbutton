@@ -12,6 +12,11 @@
 #include "MHEGAudioOutput.h"
 #include "mpegts.h"
 #include "utils.h"
+#include "libavutil/time.h"
+#include <time.h>
+
+#include <libavutil/imgutils.h>
+#include <libavutil/avutil.h>
 
 /* internal routines */
 static void *decode_thread(void *);
@@ -21,7 +26,7 @@ static void *audio_thread(void *);
 static void set_avsync_base(MHEGStreamPlayer *, double, int64_t);
 
 static void thread_usleep(unsigned long);
-static enum CodecID find_av_codec_id(int);
+static enum AVCodecID find_av_codec_id(int);
 
 /* global pool of spare VideoFrame's */
 LIST_OF(VideoFrame) *free_vframes = NULL;
@@ -58,10 +63,13 @@ new_VideoFrameListItem(double pts, enum PixelFormat pix_fmt, unsigned int width,
 	 * take a copy of the frame,
 	 * the actual data is inside the video codec somewhere and will be overwritten by the next frame we decode
 	 */
-	if((frame_size = avpicture_get_size(pix_fmt, width, height)) < 0)
+	if((frame_size = av_image_get_buffer_size(pix_fmt, width, height, 1)) < 0)
 		fatal("Invalid frame_size");
 	vf->item.frame_data = safe_fast_realloc(vf->item.frame_data, &vf->item.nalloced, frame_size);
-	avpicture_fill(&vf->item.frame, vf->item.frame_data, pix_fmt, width, height);
+
+	//avpicture_fill(&vf->item.frame, vf->item.frame_data, pix_fmt, width, height);
+	av_image_fill_arrays(&vf->item.frame_data, frame->linesize, vf->item.frame_data, pix_fmt, width, height, 1);
+
 	av_picture_copy(&vf->item.frame, (AVPicture*) frame, pix_fmt, width, height);
 
 	return vf;
@@ -271,7 +279,6 @@ MHEGStreamPlayer_setAudioStream(AudioClass *audio)
 {
 	/* there can be only one */
 	MHEGStreamPlayer *p = &player;
-
 	/* assert */
 	if(p->playing)
 		fatal("MHEGStreamPlayer_setAudioStream: trying to set stream while playing");
@@ -447,7 +454,7 @@ decode_thread(void *arg)
 	AVPacket pkt;
 	AVCodecContext *audio_codec_ctx = NULL;
 	AVCodecContext *video_codec_ctx = NULL;
-	enum CodecID codec_id;
+	enum AVCodecID codec_id;
 	AVCodec *codec = NULL;
 	double video_time_base = 90000.0;
 	double audio_time_base = 90000.0;
@@ -467,7 +474,7 @@ decode_thread(void *arg)
 	{
 		if((video_codec_ctx = avcodec_alloc_context3(NULL)) == NULL)
 			fatal("Out of memory");
-		if((codec_id = find_av_codec_id(p->video_type)) == CODEC_ID_NONE
+		if((codec_id = find_av_codec_id(p->video_type)) == AV_CODEC_ID_NONE
 		|| (codec = avcodec_find_decoder(codec_id)) == NULL)
 			fatal("Unsupported video codec");
 		if(avcodec_open2(video_codec_ctx, codec, NULL) < 0)
@@ -479,7 +486,7 @@ decode_thread(void *arg)
 	{
 		if((audio_codec_ctx = avcodec_alloc_context3(NULL)) == NULL)
 			fatal("Out of memory");
-		if((codec_id = find_av_codec_id(p->audio_type)) == CODEC_ID_NONE
+		if((codec_id = find_av_codec_id(p->audio_type)) == AV_CODEC_ID_NONE
 		|| (codec = avcodec_find_decoder(codec_id)) == NULL)
 			fatal("Unsupported audio codec");
 		if(avcodec_open2(audio_codec_ctx, codec, NULL) < 0)
@@ -489,7 +496,7 @@ decode_thread(void *arg)
 		p->audio_codec = audio_codec_ctx;
 	}
 
-	if((frame = avcodec_alloc_frame()) == NULL)
+	if((frame = av_frame_alloc()) == NULL)
 		fatal("Out of memory");
 
 	demux_apid = p->have_audio ? p->audio_pid : -1;
@@ -512,19 +519,19 @@ decode_thread(void *arg)
 			{
 				audio_frame = new_AudioFrameListItem();
 				af = &audio_frame->item;
-				used = my_avcodec_decode_audio2(audio_codec_ctx, (int16_t *) af->data, (int *) &af->size, data, size);
+				used = my_avcodec_decode_audio2(audio_codec_ctx, frame, (int *) &af->size, data, size);
 				data += used;
 				size -= used;
 				if(used > 0 && af->size > 0)
 				{
 					af->pts = pts;
 					/* 16 or 32-bit samples, but af->size is in bytes */
-					if(audio_codec_ctx->sample_fmt == SAMPLE_FMT_S16)
+					if(audio_codec_ctx->sample_fmt == AV_SAMPLE_FMT_S16)
 						pts += (af->size / 2.0) / (audio_codec_ctx->channels * audio_codec_ctx->sample_rate);
-					else if(audio_codec_ctx->sample_fmt == SAMPLE_FMT_S32)
+					else if(audio_codec_ctx->sample_fmt == AV_SAMPLE_FMT_S32)
 						pts += (af->size / 4.0) / (audio_codec_ctx->channels * audio_codec_ctx->sample_rate);
 					else
-						fatal("Unsupported audio sample format (%d)", audio_codec_ctx->sample_fmt);
+						fatal("Unsupported audio sample format %s (%d - %dch - %dhz)", codec->name, audio_codec_ctx->sample_fmt, audio_codec_ctx->channels, audio_codec_ctx->sample_rate);
 					pthread_mutex_lock(&p->audioq_lock);
 					LIST_APPEND(&p->audioq, audio_frame);
 					pthread_mutex_unlock(&p->audioq_lock);
@@ -557,7 +564,7 @@ decode_thread(void *arg)
 		{
 			verbose("MHEGStreamPlayer: decoder got unexpected/untimed packet");
 		}
-		av_free_packet(&pkt);
+		av_packet_unref(&pkt);
 	}
 
 	/* clean up */
@@ -902,9 +909,9 @@ audio_thread(void *arg)
 		fatal("audio_codec is NULL");
 
 	/* TODO will these be big endian on a big endian machine? */
-	if(p->audio_codec->sample_fmt == SAMPLE_FMT_S16)
+	if(p->audio_codec->sample_fmt == AV_SAMPLE_FMT_S16)
 		format = SND_PCM_FORMAT_S16_LE;
-	else if(p->audio_codec->sample_fmt == SAMPLE_FMT_S32)
+	else if(p->audio_codec->sample_fmt == AV_SAMPLE_FMT_S32)
 		format = SND_PCM_FORMAT_S32_LE;
 	else
 		fatal("Unsupported audio sample format (%d)", p->audio_codec->sample_fmt);
@@ -1005,49 +1012,49 @@ thread_usleep(unsigned long usecs)
  * from libavformat/mpegts.c
  */
 
-static enum CodecID
+static enum AVCodecID
 find_av_codec_id(int stream_type)
 {
-	enum CodecID codec_id;
+	enum AVCodecID codec_id;
 
-	codec_id = CODEC_ID_NONE;
+	codec_id = AV_CODEC_ID_NONE;
 	switch(stream_type)
 	{
 	case STREAM_TYPE_AUDIO_MPEG1:
 	case STREAM_TYPE_AUDIO_MPEG2:
-		codec_id = CODEC_ID_MP3;
+		codec_id = AV_CODEC_ID_MP3;
 		break;
 
 	case STREAM_TYPE_VIDEO_MPEG1:
 	case STREAM_TYPE_VIDEO_MPEG2:
-		codec_id = CODEC_ID_MPEG2VIDEO;
+		codec_id = AV_CODEC_ID_MPEG2VIDEO;
 		break;
 
 	case STREAM_TYPE_VIDEO_MPEG4:
-		codec_id = CODEC_ID_MPEG4;
+		codec_id = AV_CODEC_ID_MPEG4;
 		break;
 
 	case STREAM_TYPE_VIDEO_H264:
-		codec_id = CODEC_ID_H264;
+		codec_id = AV_CODEC_ID_H264;
 		break;
 
 	case STREAM_TYPE_AUDIO_AAC:
-		codec_id = CODEC_ID_AAC;
+		codec_id = AV_CODEC_ID_AAC;
 		break;
 
 	case STREAM_TYPE_AUDIO_AC3:
-		codec_id = CODEC_ID_AC3;
+		codec_id = AV_CODEC_ID_AC3;
 		break;
 
 	case STREAM_TYPE_AUDIO_DTS:
-		codec_id = CODEC_ID_DTS;
+		codec_id = AV_CODEC_ID_DTS;
 		break;
 
 	default:
 		break;
 	}
 
-	if(codec_id == CODEC_ID_NONE)
+	if(codec_id == AV_CODEC_ID_NONE)
 		error("Unsupported audio/video codec (MPEG stream type=%d)", stream_type);
 
 	return codec_id;

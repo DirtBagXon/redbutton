@@ -1056,6 +1056,7 @@ prog_SI_TuneIndex(LIST_OF(Parameter) *params, OctetString *caller_gid)
 		 */
 		if(stream_playing)
 			MHEGStreamPlayer_stop();
+
 		MHEGEngine_retune(service_url);
 		/*
 		 * if we were playing, restart
@@ -1081,23 +1082,23 @@ prog_SI_TuneIndex(LIST_OF(Parameter) *params, OctetString *caller_gid)
 		/* tuneinfo, bit 3: carousel ID mapping flag */
 		if((tuneinfo & 0x08) == 0)
 		{
-printf("TODO: SI_TuneIndex: tuneinfo=%d; use current carousel\n", tuneinfo);
+		printf("TODO: SI_TuneIndex: tuneinfo=%d; use current carousel\n", tuneinfo);
 		}
 		else
 		{
-printf("TODO: SI_TuneIndex: tuneinfo=%d; use initial carousel\n", tuneinfo);
+		printf("TODO: SI_TuneIndex: tuneinfo=%d; use initial carousel\n", tuneinfo);
 		}
 	}
 	else
 	{
 		/* carousel ID is in bits 8-15 */
-printf("TODO: SI_TuneIndex: tuneinfo=%d; carousel ID=%d\n", tuneinfo, (tuneinfo >> 8) & 0xff);
+		printf("TODO: SI_TuneIndex: tuneinfo=%d; carousel ID=%d\n", tuneinfo, (tuneinfo >> 8) & 0xff);
 	}
 
 	/* tuneinfo, bit 4: broadcaster interrupt flag */
 	if((tuneinfo & 0x10) != 0)
 	{
-printf("TODO: SI_TuneIndex: tuneinfo=%d; disable broadcaster interrupt flag\n", tuneinfo);
+		printf("TODO: SI_TuneIndex: tuneinfo=%d; disable broadcaster interrupt flag\n", tuneinfo);
 	}
 
 	return true;

@@ -145,7 +145,7 @@ mpegts_demux_frame(MpegTSContext *ctx, AVPacket *frame)
 	{
 		if(mpegts_demux_packet(ctx, &packet) < 0)
 		{
-			av_free_packet(&packet);
+			av_packet_unref(&packet);
 			return -1;
 		}
 		/* find the stream */
@@ -157,13 +157,13 @@ mpegts_demux_frame(MpegTSContext *ctx, AVPacket *frame)
 			/* not a new frame, add data to the exisiting one */
 			if((frame_data = av_fast_realloc(pes->frame_data, &pes->alloc_size, pes->frame_size + packet.size)) == NULL)
 			{
-				av_free_packet(&packet);
+				av_packet_unref(&packet);
 				return -1;
 			}
 			pes->frame_data = frame_data;
 			memcpy(pes->frame_data + pes->frame_size, packet.data, packet.size);
 			pes->frame_size += packet.size;
-			av_free_packet(&packet);
+			av_packet_unref(&packet);
 		}
 	}
 	while(ctx->is_start == 0);
@@ -176,7 +176,7 @@ mpegts_demux_frame(MpegTSContext *ctx, AVPacket *frame)
 	 */
 	if(av_new_packet(frame, pes->frame_size) != 0)
 	{
-		av_free_packet(&packet);
+		av_packet_unref(&packet);
 		return -1;
 	}
 	memcpy(frame->data, pes->frame_data, pes->frame_size);
@@ -188,8 +188,8 @@ mpegts_demux_frame(MpegTSContext *ctx, AVPacket *frame)
 	/* copy the first packet of the next frame into PES context */
 	if((frame_data = av_fast_realloc(pes->frame_data, &pes->alloc_size, packet.size)) == NULL)
 	{
-		av_free_packet(&packet);
-		av_free_packet(frame);
+		av_packet_unref(&packet);
+		av_packet_unref(frame);
 		return -1;
 	}
 	pes->frame_data = frame_data;
@@ -206,7 +206,7 @@ mpegts_demux_frame(MpegTSContext *ctx, AVPacket *frame)
 	else
 		pes->frame_dts = packet.dts;
 
-	av_free_packet(&packet);
+	av_packet_unref(&packet);
 
 	return 0;
 }
@@ -286,7 +286,8 @@ static void
 handle_packet(MpegTSContext *ctx, const uint8_t *packet)
 {
 	PESContext *pes;
-	int cc, cc_ok;
+	int cc;
+	//int cc_ok;
 	int pid, afc;
 	const uint8_t *p, *p_end;
 
@@ -302,7 +303,7 @@ handle_packet(MpegTSContext *ctx, const uint8_t *packet)
 
 	/* continuity check */
 	cc = (packet[3] & 0xf);
-	cc_ok = (ctx->last_cc < 0) || (((ctx->last_cc + 1) & 0x0f) == cc);
+	//cc_ok = (ctx->last_cc < 0) || (((ctx->last_cc + 1) & 0x0f) == cc);
 	ctx->last_cc = cc;
 #if 0
 	/* skip until we find the next start packet */

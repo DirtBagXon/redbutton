@@ -534,6 +534,7 @@ MHEGEngine_getActiveScene(void)
 	return &engine.active_app.scene->u.scene;
 }
 
+
 int
 MHEGEngine_getTuneInfo(void)
 {
@@ -544,7 +545,6 @@ void
 MHEGEngine_setTuneInfo(int tuneinfo)
 {
 	engine.tuneinfo = tuneinfo;
-
 	return;
 }
 

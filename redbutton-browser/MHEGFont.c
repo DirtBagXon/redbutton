@@ -297,7 +297,7 @@ MHEGFont_layoutText(MHEGFont *f, MHEGColour *col, OctetString *text, OriginalBox
 	LIST_TYPE(MHEGTextElement) *elem;
 	FT_Face face;
 	int yOffsetTop, yOffsetBottom, xOffsetLeft;
-	int num_lines;
+	//int num_lines;
 	int available_width;
 	int xmax, ymax;
 	LIST_TYPE(MHEGTextElement) *line_start, *next_line;
@@ -351,10 +351,10 @@ MHEGFont_layoutText(MHEGFont *f, MHEGColour *col, OctetString *text, OriginalBox
 	XftUnlockFace(f->font);
 
 	/* 1a - find the max number of lines that can be rendered in the given area */
-	if(box->y_length < (yOffsetBottom + yOffsetTop))
-		num_lines = 1;
-	else
-		num_lines = ((box->y_length - (yOffsetBottom + yOffsetTop)) / f->line_spc) + 1;
+	//if(box->y_length < (yOffsetBottom + yOffsetTop))
+	//	num_lines = 1;
+	//else
+	//	num_lines = ((box->y_length - (yOffsetBottom + yOffsetTop)) / f->line_spc) + 1;
 
 	/* 1b - find the width available for each line */
 	available_width = box->x_length - xOffsetLeft;

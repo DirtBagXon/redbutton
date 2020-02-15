@@ -680,15 +680,13 @@ cmd_avstream(struct listen_data *listen_data, FILE *client, int argc, char *argv
 bool
 cmd_available(struct listen_data *listen_data, FILE *client, int argc, char *argv[])
 {
-	struct carousel *car = listen_data->carousel;
 	unsigned int service_id;
 
 	CHECK_USAGE(2, "available <ServiceID>");
 
 	service_id = strtoul(argv[1], NULL, 0);
 
-	/* are we currently tuned to it, or is it in the channels.conf file */
-	if(car->service_id == service_id || service_available(service_id))
+	if(service_available(service_id))
 		SEND_RESPONSE(200, "OK");
 	else
 		SEND_RESPONSE(404, "Not Found");

@@ -23,6 +23,38 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_BGR24
+#define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
+#endif
+
+#ifndef PIX_FMT_RGB24
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
+#ifndef PIX_FMT_RGB555
+#define PIX_FMT_RGB555 AV_PIX_FMT_RGB555
+#endif
+
+#ifndef PIX_FMT_RGB565
+#define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
+#endif
+
+#ifndef PIX_FMT_NONE
+#define PIX_FMT_NONE AV_PIX_FMT_NONE
+#endif
+
+#ifndef PixelFormat
+#define PixelFormat AVPixelFormat
+#endif
+
+#ifndef AVCODEC_MAX_AUDIO_FRAME_SIZE
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <libavformat/avformat.h>
@@ -42,7 +74,7 @@
 enum PixelFormat find_av_pix_fmt(int, unsigned long, unsigned long, unsigned long);
 
 /* deprecated FFMPEG functions that have now been removed */
-int my_avcodec_decode_audio2(AVCodecContext *, int16_t *, int *, const uint8_t *, int);
+int my_avcodec_decode_audio2(AVCodecContext *, AVFrame *, int *, const uint8_t *, int);
 int my_avcodec_decode_video(AVCodecContext *, AVFrame *, int *, const uint8_t *, int);
 
 unsigned int char2hex(unsigned char);

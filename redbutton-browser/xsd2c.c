@@ -1962,7 +1962,7 @@ parse_info(struct userdata *ud, char *fmt, ...)
 
 	if(ud->verbose)
 	{
-		fprintf(stdout, "%s line %d: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
+		fprintf(stdout, "%s line %lu: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
 		va_start(args, fmt);
 		vfprintf(stdout, fmt, args);
 		fprintf(stdout, "\n");
@@ -1977,7 +1977,7 @@ parse_warning(struct userdata *ud, char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Warning: %s line %d: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
+	fprintf(stderr, "Warning: %s line %lu: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -1992,7 +1992,7 @@ parse_fatal(struct userdata *ud, char *fmt, ...)
 {
 	va_list args;
 
-	fprintf(stderr, "Error: %s line %d: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
+	fprintf(stderr, "Error: %s line %lu: ", ud->filename, XML_GetCurrentLineNumber(ud->p));
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);

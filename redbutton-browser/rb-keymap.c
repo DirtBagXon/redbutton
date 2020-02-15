@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 
 #define DEFAULT_FILENAME	"keymap.conf"
 
@@ -95,7 +96,8 @@ main(int argc, char *argv[])
 			XNextEvent(dpy, &event);
 		while(event.type != KeyPress);
 		key = &event.xkey;
-		sym = XKeycodeToKeysym(dpy, key->keycode, 0);
+		//sym = XKeycodeToKeysym(dpy, key->keycode, 0);
+		sym = XkbKeycodeToKeysym(dpy, key->keycode, 0, event.xkey.state & ShiftMask ? 1 : 0);
 		printf("%s\n", XKeysymToString(sym));
 		fprintf(conf, "%s\n", XKeysymToString(sym));
 	}

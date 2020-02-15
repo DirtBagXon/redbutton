@@ -189,7 +189,7 @@ typedef struct
 	LIST_OF(MHEGAction) *main_actionq;		/* UK MHEG Profile event processing method */
 	LIST_OF(MHEGAction) *temp_actionq;		/* UK MHEG Profile event processing method */
 	LIST_OF(PersistentData) *persistent;		/* persistent files */
-	int tuneinfo;					/* SI_TuneIndexInfo value */
+	int tuneinfo;
 } MHEGEngine;
 
 /* prototypes */

@@ -16,10 +16,19 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
+#include <libavutil/imgutils.h>
+#include <libavutil/avutil.h>
+#include <X11/XKBlib.h>
+
 #include "MHEGEngine.h"
 #include "MHEGDisplay.h"
 #include "readpng.h"
 #include "utils.h"
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
+#define av_frame_alloc     avcodec_alloc_frame
+#define av_packet_unref    av_free_packet
+#endif 
 
 /* internal utils */
 static MHEGKeyMapEntry *load_keymap(char *);
@@ -313,7 +322,9 @@ MHEGDisplay_processEvents(MHEGDisplay *d, bool block)
 	{
 	case KeyPress:
 		key = &event.xkey;
-		sym = XKeycodeToKeysym(d->dpy, key->keycode, 0);
+		//sym = XKeycodeToKeysym(d->dpy, key->keycode, 0);
+		sym = XkbKeycodeToKeysym(d->dpy, key->keycode, 0, event.xkey.state & ShiftMask ? 1 : 0);
+
 		/* find the KeySym in the keyboard map */
 		map = d->keymap;
 		while(map->mheg_key != 0 && map->x_key != sym)
@@ -871,18 +882,19 @@ MHEGDisplay_newMPEGBitmap(MHEGDisplay *d, OctetString *mpeg)
 		return NULL;
 
 	/* use ffmpeg to convert the data into a standard format we can use as an XImage */
+
 	if((codec_ctx = avcodec_alloc_context3(NULL)) == NULL)
 		fatal("Out of memory");
 
-	if((codec = avcodec_find_decoder(CODEC_ID_MPEG2VIDEO)) == NULL)
+	if((codec = avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO)) == NULL)
 		fatal("Unable to initialise MPEG decoder");
 
 	if(avcodec_open2(codec_ctx, codec, NULL) < 0)
 		fatal("Unable to open video codec");
 
-	if((yuv_frame = avcodec_alloc_frame()) == NULL)
+	if((yuv_frame = av_frame_alloc()) == NULL)
 		fatal("Out of memory");
-	if((rgb_frame = avcodec_alloc_frame()) == NULL)
+	if((rgb_frame = av_frame_alloc()) == NULL)
 		fatal("Out of memory");
 
 	/* ffmpeg may read passed the end of the buffer, so pad it out */
@@ -915,16 +927,18 @@ MHEGDisplay_newMPEGBitmap(MHEGDisplay *d, OctetString *mpeg)
 		struct SwsContext *sws_ctx;
 		width = codec_ctx->width;
 		height = codec_ctx->height;
-		if((nbytes = avpicture_get_size(PIX_FMT_RGBA32, width, height)) < 0)
+		if((nbytes = av_image_get_buffer_size(PIX_FMT_RGBA32, width, height, 1)) < 0)
 			fatal("Invalid MPEG image");
 		rgba = safe_malloc(nbytes);
-		avpicture_fill((AVPicture *) rgb_frame, rgba, PIX_FMT_RGBA32, width, height);
+		//avpicture_fill((AVPicture *) rgb_frame, rgba, PIX_FMT_RGBA32, width, height);
+		av_image_fill_arrays(rgb_frame->data, rgb_frame->linesize, rgba, PIX_FMT_RGBA32, width, height, 1);
 		//img_convert((AVPicture *) rgb_frame, PIX_FMT_RGBA32, (AVPicture*) yuv_frame, codec_ctx->pix_fmt, width, height);
 		if((sws_ctx = sws_getContext(width, height, codec_ctx->pix_fmt,
 					     width, height, PIX_FMT_RGBA32,
 					     SWS_FAST_BILINEAR, NULL, NULL, NULL)) == NULL)
 			fatal("Out of memory");
-		sws_scale(sws_ctx, yuv_frame->data, yuv_frame->linesize, 0, height, rgb_frame->data, rgb_frame->linesize);
+		//sws_scale(sws_ctx, yuv_frame->data, yuv_frame->linesize, 0, height, rgb_frame->data, rgb_frame->linesize);
+		sws_scale(sws_ctx, (const unsigned char * const*)yuv_frame->data, yuv_frame->linesize, 0, height, rgb_frame->data, rgb_frame->linesize);
 		sws_freeContext(sws_ctx);
 		/* convert the PIX_FMT_RGBA32 data to a MHEGBitmap */
 		b = MHEGBitmap_fromRGBA(d, rgba, width, height);

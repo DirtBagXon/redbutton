@@ -399,7 +399,7 @@ StreamClass_SetData(StreamClass *t, SetData *set, OctetString *caller_gid)
 		else if(OctetString_strncmp(service, "rec://svc/lcn/", 14) == 0)
 		{
 /* TODO */
-printf("TODO: StreamClass_SetData: service='%.*s'\n", service->size, service->data);
+		printf("TODO: StreamClass_SetData: service='%.*s'\n", service->size, service->data);
 		}
 		else if(OctetString_strcmp(service, "rec://svc/def") == 0
 		     || OctetString_strcmp(service, "rec://svc/cur") == 0)

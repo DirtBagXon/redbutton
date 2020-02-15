@@ -14,6 +14,10 @@
 #include "videoout_xshm.h"
 #include "utils.h"
 
+#include <libavutil/imgutils.h>
+#include <libavutil/avutil.h>
+
+
 void *vo_xshm_init(void);
 void vo_xshm_fini(void *);
 void vo_xshm_prepareFrame(void *, VideoFrame *, unsigned int, unsigned int);
@@ -95,7 +99,7 @@ vo_xshm_prepareFrame(void *ctx, VideoFrame *f, unsigned int out_width, unsigned 
 	}
 
 	/* resize it (if needed) and convert to RGB */
-	sws_scale(v->sws_ctx, f->frame.data, f->frame.linesize, 0, f->height, v->rgb_frame.data, v->rgb_frame.linesize);
+	sws_scale(v->sws_ctx, (const uint8_t * const*)f->frame.data, f->frame.linesize, 0, f->height, v->rgb_frame.data, v->rgb_frame.linesize);
 
 	return;
 }
@@ -138,7 +142,7 @@ vo_xshm_create_frame(vo_xshm_ctx *v, unsigned int out_width, unsigned int out_he
 
 	rgb_size = v->current_frame->bytes_per_line * out_height;
 
-	if(rgb_size != avpicture_get_size(v->out_format, out_width, out_height))
+	if(rgb_size != av_image_get_buffer_size(v->out_format, out_width, out_height, 1))
 		fatal("XImage and ffmpeg pixel formats differ");
 
 	if((v->shm.shmid = shmget(IPC_PRIVATE, rgb_size, IPC_CREAT | 0777)) == -1)
@@ -151,7 +155,8 @@ vo_xshm_create_frame(vo_xshm_ctx *v, unsigned int out_width, unsigned int out_he
 
 	/* we made sure these pixel formats are the same */
 	v->current_frame->data = v->shm.shmaddr;
-	avpicture_fill(&v->rgb_frame, (uint8_t *) v->shm.shmaddr, v->out_format, out_width, out_height);
+	//avpicture_fill(&v->rgb_frame, (uint8_t *) v->shm.shmaddr, v->out_format, out_width, out_height);
+	av_image_fill_arrays(v->rgb_frame.data, v->rgb_frame.linesize, (uint8_t *) v->shm.shmaddr, v->out_format, out_width, out_height, 1);
 
 	return;
 }

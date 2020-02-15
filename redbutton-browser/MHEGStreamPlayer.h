@@ -17,6 +17,7 @@
 #define CodecID AVCodecID
 #define SAMPLE_FMT_S32 AV_SAMPLE_FMT_S32
 #define SAMPLE_FMT_S16 AV_SAMPLE_FMT_S16
+
 #ifndef AVCODEC_MAX_AUDIO_FRAME_SIZE
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 #endif
@@ -98,7 +99,6 @@ void MHEGStreamPlayer_setAudioStream(AudioClass *);
 
 void MHEGStreamPlayer_play(void);
 void MHEGStreamPlayer_stop(void);
-
 bool MHEGStreamPlayer_isPlaying(void);
 
 #endif	/* __MHEGSTREAMPLAYER_H__ */

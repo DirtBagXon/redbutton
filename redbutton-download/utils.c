@@ -147,7 +147,7 @@ hexdump(unsigned char *data, size_t nbytes)
 	{
 		/* byte offset at start of line */
 		if((nout % HEXDUMP_WIDTH) == 0)
-			printf("0x%.8x  ", nout);
+			printf("0x%.8x  ", (unsigned int)nout);
 		/* the byte value in hex */
 		printf("%.2x ", data[nout]);
 		/* the ascii equivalent at the end of the line */

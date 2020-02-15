@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -O2
+CFLAGS=-Wall -O2 -Wno-deprecated-declarations
 # gprof profiling
 #CFLAGS=-Wall -O2 -pg
 CPPFLAGS=-MD
@@ -10,10 +10,10 @@ DEFS=-D_REENTRANT -D_GNU_SOURCE
 # safe_malloc debugging
 #DEFS=-DDEBUG_ALLOC -D_REENTRANT -D_GNU_SOURCE
 INCS=`freetype-config --cflags`
-LIBS=-lm -lz -L/usr/X11R6/lib -lX11 -lXext -lXt -lXrender -lXft -lpng -lavformat -lavcodec -lavutil -lasound -lpthread -lfontconfig -lfreetype
+LIBS=-lm -lz -L/usr/lib/x86_64-linux-gnu -lavformat -lavutil -lavformat -lavcodec -lX11 -lXext -lXt -lXrender -lXft -lpng -lswscale -lasound -lpthread -lfontconfig -lfreetype
 
 # if libswscale is not in libavcodec, add a -lswscale to the LIBS
-LIBS+=`(ldconfig -p | fgrep -q libswscale) && echo "-lswscale"`
+LIBS+=`(/sbin/ldconfig -p | fgrep -q libswscale) && echo "-lswscale"`
 
 CLASSES=ActionClass.o	\
 	ApplicationClass.o	\
@@ -91,18 +91,14 @@ OBJS=	rb-browser.o		\
 
 default: rb-browser rb-keymap
 
-rb-browser:	${OBJS}
+rb-browser:	ISO13522-MHEG-5.c clone.c ${OBJS}
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEFS} ${INCS} -o rb-browser ${OBJS} ${LIBS}
-	
-${OBJS}:	clone.c rtti.h
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEFS} ${INCS} -c $<
 
-ISO13522-MHEG-5.o:	rtti.h
-	${CC} ${CPPFLAGS} ${CFLAGS} ${DEFS} ${INCS} -c ISO13522-MHEG-5.c
-
-rtti.h:	xsd2c ISO13522-MHEG-5.xsd add_instance_vars.conf add_rtti.conf
+ISO13522-MHEG-5.c:	xsd2c.c ISO13522-MHEG-5.xsd add_instance_vars.conf add_rtti.conf
+	make xsd2c
 	./xsd2c ISO13522-MHEG-5.xsd
 	./add_instance_vars ISO13522-MHEG-5.c ISO13522-MHEG-5.h
 	./add_rtti ISO13522-MHEG-5.c > rtti.h
@@ -120,24 +116,24 @@ dertest:	dertest.c dertest-mheg.c der_decode.c utils.c
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEFS} -DDER_VERBOSE ${INCS} -o dertest dertest.c dertest-mheg.c der_decode.c utils.c
 
 dertest-mheg.c:	xsd2c ISO13522-MHEG-5.xsd
+	make xsd2c
 	./xsd2c -c dertest-mheg.c -h dertest-mheg.h ISO13522-MHEG-5.xsd
 
 berdecode:	berdecode.c
-	${CC} ${CPPFLAGS} ${CFLAGS} ${DEFS} -o berdecode berdecode.c
+	${CC} ${CFLAGS} ${DEFS} -o berdecode berdecode.c
 
 install:	rb-browser rb-keymap
 	install -m 755 rb-browser ${DESTDIR}/bin
 	install -m 755 rb-keymap ${DESTDIR}/bin
 
 clean:
-	rm -f rb-browser rb-keymap xsd2c dertest dertest-mheg.[ch] ${OBJS} ${OBJS:.o=.d} ISO13522-MHEG-5.[ch] clone.[ch] rtti.h gmon.out core
+	rm -f rb-browser rb-keymap xsd2c dertest dertest-mheg.[ch] ${OBJS} ${OBJS:.o} *.d ISO13522-MHEG-5.[ch] clone.[ch] rtti.h gmon.out core
 
 TARDIR=`basename ${PWD}`
 
 tar:	clean
 	(cd ..; tar zcvf ${TARDIR}.tar.gz --exclude .svn ${TARDIR})
 
-.PHONY:	clean install tar
+.PHONY: clean install tar
 
 -include ${OBJS:.o=.d}
-
